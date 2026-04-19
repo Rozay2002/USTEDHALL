@@ -69,7 +69,7 @@ export default function StudentLogin() {
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label>Email</Label><Input type="email" required value={email} onChange={e => setEmail(e.target.value)} /></div>
+            <div><Label>Index Number</Label><Input required value={indexNumber} onChange={e => setIndexNumber(e.target.value)} maxLength={10} placeholder="10-digit index number" /></div>
             <div><Label>Password</Label><Input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</Button>
             <p className="text-center text-sm text-muted-foreground">Don't have an account? <Link to="/student/register" className="text-primary font-medium hover:underline">Register</Link></p>
