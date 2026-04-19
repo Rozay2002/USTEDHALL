@@ -22,20 +22,19 @@ export default function StudentLogin() {
     setLoading(true);
 
     // Look up the email associated with this index number
-    const { data: profile, error: lookupError } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("index_number", indexNumber)
-      .maybeSingle();
+    const { data: emailData, error: lookupError } = await (supabase.rpc as any)(
+      "get_email_by_index",
+      { _index_number: indexNumber }
+    );
 
-    if (lookupError || !profile?.email) {
+    if (lookupError || !emailData) {
       setLoading(false);
       toast.error("No account found for that index number");
       return;
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: profile.email,
+      email: emailData as string,
       password,
     });
     if (error) { setLoading(false); toast.error(error.message); return; }
