@@ -1,27 +1,38 @@
 import { useAuth } from "@/lib/auth-context";
-import { Student, getStudentBooking, getRoomOccupants, getAcademicYear } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useCurrentAcademicYear, useBookings } from "@/hooks/useBookings";
+import { supabase } from "@/integrations/supabase/client";
+import { Profile } from "@/lib/store";
 
 export default function AllocationSlip() {
-  const { user, userType } = useAuth();
+  const { user, profile, role, loading } = useAuth();
   const navigate = useNavigate();
-  const student = user as Student;
-  const ay = getAcademicYear();
-  const booking = student ? getStudentBooking(student.id, ay.year) : undefined;
-  const roommates = booking ? getRoomOccupants(booking.hallName, booking.block, booking.roomNumber, ay.year).filter(s => s.id !== student.id) : [];
-  const slipRef = useRef<HTMLDivElement>(null);
+  const ay = useCurrentAcademicYear();
+  const { bookings } = useBookings(ay?.year);
+  const [roommates, setRoommates] = useState<Profile[]>([]);
+
+  const booking = bookings.find(b => b.student_id === user?.id);
 
   useEffect(() => {
-    if (!user || userType !== "student") navigate("/student/login");
-    if (user && !booking) navigate("/student/dashboard");
-  }, [user, userType, booking, navigate]);
+    if (!loading && (!user || role !== "student")) navigate("/student/login");
+  }, [user, role, loading, navigate]);
 
-  const handlePrint = () => window.print();
+  useEffect(() => {
+    if (!booking) return;
+    const others = bookings.filter(
+      b => b.hall_name === booking.hall_name && b.block === booking.block
+        && b.room_number === booking.room_number && b.student_id !== user?.id
+    );
+    if (others.length === 0) { setRoommates([]); return; }
+    supabase.from("profiles").select("*").in("id", others.map(o => o.student_id))
+      .then(({ data }) => setRoommates((data as Profile[]) || []));
+  }, [booking, bookings, user?.id]);
 
-  if (!student || !booking) return null;
+  if (loading || !profile || !ay) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!booking) { navigate("/student/dashboard"); return null; }
 
   return (
     <div className="min-h-screen bg-muted p-4">
@@ -31,12 +42,12 @@ export default function AllocationSlip() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
           <div className="flex-1" />
-          <Button onClick={handlePrint}>
+          <Button onClick={() => window.print()}>
             <Download className="h-4 w-4 mr-2" /> Print / Download
           </Button>
         </div>
 
-        <div ref={slipRef} className="bg-card border rounded-xl p-8 shadow-lg">
+        <div className="bg-card border rounded-xl p-8 shadow-lg">
           <div className="text-center border-b pb-6 mb-6">
             <h1 className="text-2xl font-bold text-primary">University Hall Accommodation</h1>
             <h2 className="text-lg text-muted-foreground mt-1">Room Allocation Slip</h2>
@@ -45,12 +56,12 @@ export default function AllocationSlip() {
 
           <div className="grid grid-cols-2 gap-4 text-sm mb-6">
             {[
-              ["Full Name", student.fullName],
-              ["Index Number", student.indexNumber],
-              ["Program", student.program],
-              ["Level", `Level ${student.level}`],
-              ["Contact", student.contact],
-              ["Email", student.email],
+              ["Full Name", profile.full_name],
+              ["Index Number", profile.index_number],
+              ["Program", profile.program],
+              ["Level", profile.level ? `Level ${profile.level}` : "—"],
+              ["Contact", profile.contact],
+              ["Email", profile.email],
             ].map(([label, val]) => (
               <div key={label}>
                 <dt className="text-muted-foreground">{label}</dt>
@@ -63,10 +74,10 @@ export default function AllocationSlip() {
             <h3 className="font-bold mb-3">Room Details</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
               {[
-                ["Hall", booking.hallName],
+                ["Hall", booking.hall_name],
                 ["Block", `Block ${booking.block}`],
-                ["Room", `Room ${booking.roomNumber}`],
-                ["Date", new Date(booking.bookedAt).toLocaleDateString()],
+                ["Room", `Room ${booking.room_number}`],
+                ["Date", new Date(booking.booked_at).toLocaleDateString()],
               ].map(([label, val]) => (
                 <div key={label}>
                   <dt className="text-muted-foreground">{label}</dt>
@@ -80,7 +91,7 @@ export default function AllocationSlip() {
             <div className="mb-6">
               <h3 className="font-bold mb-2 text-sm">Roommates</h3>
               <ul className="text-sm space-y-1">
-                {roommates.map(r => <li key={r.id}>• {r.fullName} ({r.indexNumber})</li>)}
+                {roommates.map(r => <li key={r.id}>• {r.full_name} ({r.index_number})</li>)}
               </ul>
             </div>
           )}
