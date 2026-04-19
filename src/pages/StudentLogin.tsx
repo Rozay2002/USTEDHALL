@@ -9,14 +9,35 @@ import { GraduationCap, ArrowLeft } from "lucide-react";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [indexNumber, setIndexNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!/^\d{10}$/.test(indexNumber)) {
+      toast.error("Index number must be exactly 10 digits");
+      return;
+    }
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    // Look up the email associated with this index number
+    const { data: profile, error: lookupError } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("index_number", indexNumber)
+      .maybeSingle();
+
+    if (lookupError || !profile?.email) {
+      setLoading(false);
+      toast.error("No account found for that index number");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password,
+    });
     if (error) { setLoading(false); toast.error(error.message); return; }
 
     // Verify role
