@@ -9,14 +9,34 @@ import { GraduationCap, ArrowLeft } from "lucide-react";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [indexNumber, setIndexNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!/^\d{10}$/.test(indexNumber)) {
+      toast.error("Index number must be exactly 10 digits");
+      return;
+    }
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    // Look up the email associated with this index number
+    const { data: emailData, error: lookupError } = await (supabase.rpc as any)(
+      "get_email_by_index",
+      { _index_number: indexNumber }
+    );
+
+    if (lookupError || !emailData) {
+      setLoading(false);
+      toast.error("No account found for that index number");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailData as string,
+      password,
+    });
     if (error) { setLoading(false); toast.error(error.message); return; }
 
     // Verify role
@@ -48,7 +68,7 @@ export default function StudentLogin() {
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label>Email</Label><Input type="email" required value={email} onChange={e => setEmail(e.target.value)} /></div>
+            <div><Label>Index Number</Label><Input required value={indexNumber} onChange={e => setIndexNumber(e.target.value)} maxLength={10} placeholder="10-digit index number" /></div>
             <div><Label>Password</Label><Input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</Button>
             <p className="text-center text-sm text-muted-foreground">Don't have an account? <Link to="/student/register" className="text-primary font-medium hover:underline">Register</Link></p>
