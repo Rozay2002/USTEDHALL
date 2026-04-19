@@ -3,31 +3,31 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loginAdmin } from "@/lib/store";
-import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Shield, ArrowLeft } from "lucide-react";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      const admin = loginAdmin(email, password);
-      login(admin, "admin");
-      toast.success("Welcome back, Admin!");
-      navigate("/admin/dashboard");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { setLoading(false); toast.error(error.message); return; }
+
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+    setLoading(false);
+    if (!roles?.some(r => r.role === "admin")) {
+      toast.error("This account is not an admin");
+      await supabase.auth.signOut();
+      return;
     }
+    toast.success("Welcome back, Admin!");
+    navigate("/admin/dashboard");
   };
 
   return (

@@ -4,36 +4,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { registerStudent } from "@/lib/store";
-import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 
 export default function StudentRegister() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [form, setForm] = useState({
     fullName: "", indexNumber: "", contact: "", program: "", level: "100", email: "", password: "",
   });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{10}$/.test(form.indexNumber)) {
       toast.error("Index number must be exactly 10 digits");
       return;
     }
     setLoading(true);
-    try {
-      const student = registerStudent({ ...form, level: parseInt(form.level) });
-      login(student, "student");
-      toast.success("Registration successful!");
-      navigate("/student/dashboard");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/student/dashboard`,
+        data: {
+          full_name: form.fullName,
+          index_number: form.indexNumber,
+          contact: form.contact,
+          program: form.program,
+          level: form.level,
+        },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    toast.success("Registration successful!");
+    navigate("/student/dashboard");
   };
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));

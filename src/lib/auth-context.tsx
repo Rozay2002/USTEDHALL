@@ -1,46 +1,77 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Student, Admin } from "./store";
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { Profile } from "./store";
 
-type UserType = "student" | "admin" | null;
+type Role = "student" | "admin" | null;
 
 interface AuthState {
-  user: Student | Admin | null;
-  userType: UserType;
-  login: (user: Student | Admin, type: "student" | "admin") => void;
-  logout: () => void;
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  role: Role;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<Student | Admin | null>(null);
-  const [userType, setUserType] = useState<UserType>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<Role>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("currentUser");
-    const savedType = localStorage.getItem("currentUserType") as UserType;
-    if (saved && savedType) {
-      setUser(JSON.parse(saved));
-      setUserType(savedType);
-    }
-  }, []);
-
-  const login = (u: Student | Admin, type: "student" | "admin") => {
-    setUser(u);
-    setUserType(type);
-    localStorage.setItem("currentUser", JSON.stringify(u));
-    localStorage.setItem("currentUserType", type);
+  const loadProfileAndRole = async (uid: string) => {
+    const [{ data: prof }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+    ]);
+    setProfile(prof as Profile | null);
+    if (roles?.some(r => r.role === "admin")) setRole("admin");
+    else if (roles?.some(r => r.role === "student")) setRole("student");
+    else setRole(null);
   };
 
-  const logout = () => {
-    setUser(null);
-    setUserType(null);
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("currentUserType");
+  useEffect(() => {
+    // Set up listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
+      if (sess?.user) {
+        // Defer to avoid deadlocks
+        setTimeout(() => loadProfileAndRole(sess.user.id), 0);
+      } else {
+        setProfile(null);
+        setRole(null);
+      }
+    });
+
+    // THEN check existing session
+    supabase.auth.getSession().then(({ data: { session: sess } }) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
+      if (sess?.user) loadProfileAndRole(sess.user.id).finally(() => setLoading(false));
+      else setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setProfile(null);
+    setRole(null);
+  };
+
+  const refreshProfile = async () => {
+    if (user) await loadProfileAndRole(user.id);
   };
 
   return (
-    <AuthContext.Provider value={{ user, userType, login, logout }}>
+    <AuthContext.Provider value={{ user, session, profile, role, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

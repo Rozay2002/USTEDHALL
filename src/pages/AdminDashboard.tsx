@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
-import { Admin, getStudents, getBookings, getAcademicYear, setAcademicYear, deleteStudent, cancelBooking, HALLS, BLOCKS, ROOMS_PER_BLOCK, MAX_OCCUPANCY, getRoomOccupancy } from "@/lib/store";
+import { HALLS, BLOCKS, ROOMS_PER_BLOCK, MAX_OCCUPANCY, Profile } from "@/lib/store";
+import { useCurrentAcademicYear, useBookings, getRoomOccupancy } from "@/hooks/useBookings";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
@@ -12,46 +14,57 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 export default function AdminDashboard() {
-  const { user, userType, logout } = useAuth();
+  const { user, profile, role, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const admin = user as Admin;
-  const [, setTick] = useState(0);
-  const refresh = () => setTick(t => t + 1);
-
-  const ay = getAcademicYear();
-  const students = getStudents();
-  const bookings = getBookings();
+  const ay = useCurrentAcademicYear();
+  const { bookings } = useBookings(ay?.year);
+  const [students, setStudents] = useState<Profile[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || userType !== "admin") navigate("/admin/login");
-  }, [user, userType, navigate]);
+    if (!loading && (!user || role !== "admin")) navigate("/admin/login");
+  }, [user, role, loading, navigate]);
 
-  if (!admin) return null;
-
-  const toggleBooking = () => {
-    setAcademicYear({ ...ay, isOpen: !ay.isOpen });
-    toast.success(ay.isOpen ? "Booking closed" : "Booking opened");
-    refresh();
+  const fetchStudents = async () => {
+    // Get user_ids with student role, then fetch profiles
+    const { data: studentRoles } = await supabase.from("user_roles").select("user_id").eq("role", "student");
+    if (!studentRoles?.length) { setStudents([]); return; }
+    const ids = studentRoles.map(r => r.user_id);
+    const { data } = await supabase.from("profiles").select("*").in("id", ids);
+    setStudents((data as Profile[]) || []);
   };
 
-  const handleDeleteStudent = () => {
-    if (deleteTarget) {
-      deleteStudent(deleteTarget);
-      setDeleteTarget(null);
-      toast.success("Student removed");
-      refresh();
-    }
+  useEffect(() => {
+    if (role === "admin") fetchStudents();
+  }, [role, bookings.length]);
+
+  const toggleBooking = async () => {
+    if (!ay) return;
+    const { error } = await supabase.from("academic_years").update({ is_open: !ay.is_open }).eq("id", ay.id);
+    if (error) toast.error(error.message);
+    else toast.success(ay.is_open ? "Booking closed" : "Booking opened");
   };
 
-  const handleCancelBooking = (id: string) => {
-    cancelBooking(id);
-    toast.success("Booking cancelled");
-    refresh();
+  const handleDeleteStudent = async () => {
+    if (!deleteTarget) return;
+    // Profile delete cascades to user_roles via auth.users? No — we delete profile only here.
+    const { error } = await supabase.from("profiles").delete().eq("id", deleteTarget);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Student removed");
+    setDeleteTarget(null);
+    fetchStudents();
+  };
+
+  const handleCancelBooking = async (id: string) => {
+    const { error } = await supabase.from("bookings").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("Booking cancelled");
   };
 
   const totalRooms = HALLS.length * BLOCKS.length * ROOMS_PER_BLOCK;
   const totalCapacity = totalRooms * MAX_OCCUPANCY;
+
+  if (loading || !profile || !ay) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-muted">
@@ -62,8 +75,8 @@ export default function AdminDashboard() {
             <h1 className="text-lg font-bold">Admin Panel</h1>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm hidden sm:inline">{admin.fullName}</span>
-            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80" onClick={() => { logout(); navigate("/"); }}>
+            <span className="text-sm hidden sm:inline">{profile.full_name}</span>
+            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80" onClick={async () => { await signOut(); navigate("/"); }}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -71,7 +84,6 @@ export default function AdminDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { icon: Users, label: "Students", value: students.length, color: "text-primary" },
@@ -87,15 +99,14 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Academic Year Control */}
         <div className="bg-card border rounded-xl p-6 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold">Academic Year: {ay.year}</h3>
             <p className="text-sm text-muted-foreground">Control booking availability</p>
           </div>
           <div className="flex items-center gap-3">
-            <Label htmlFor="booking-toggle">{ay.isOpen ? "Booking Open" : "Booking Closed"}</Label>
-            <Switch id="booking-toggle" checked={ay.isOpen} onCheckedChange={toggleBooking} />
+            <Label htmlFor="booking-toggle">{ay.is_open ? "Booking Open" : "Booking Closed"}</Label>
+            <Switch id="booking-toggle" checked={ay.is_open} onCheckedChange={toggleBooking} />
           </div>
         </div>
 
@@ -123,8 +134,8 @@ export default function AdminDashboard() {
                     <tbody>
                       {students.map(s => (
                         <tr key={s.id} className="border-t hover:bg-muted/50">
-                          <td className="px-4 py-3">{s.fullName}</td>
-                          <td className="px-4 py-3 font-mono">{s.indexNumber}</td>
+                          <td className="px-4 py-3">{s.full_name}</td>
+                          <td className="px-4 py-3 font-mono">{s.index_number}</td>
                           <td className="px-4 py-3">{s.program}</td>
                           <td className="px-4 py-3">{s.level}</td>
                           <td className="px-4 py-3">{s.email}</td>
@@ -158,15 +169,15 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody>
                       {bookings.map(b => {
-                        const st = students.find(s => s.id === b.studentId);
+                        const st = students.find(s => s.id === b.student_id);
                         return (
                           <tr key={b.id} className="border-t hover:bg-muted/50">
-                            <td className="px-4 py-3">{st?.fullName ?? "Unknown"}</td>
-                            <td className="px-4 py-3">{b.hallName}</td>
+                            <td className="px-4 py-3">{st?.full_name ?? "Unknown"}</td>
+                            <td className="px-4 py-3">{b.hall_name}</td>
                             <td className="px-4 py-3">{b.block}</td>
-                            <td className="px-4 py-3">{b.roomNumber}</td>
-                            <td className="px-4 py-3">{b.academicYear}</td>
-                            <td className="px-4 py-3">{new Date(b.bookedAt).toLocaleDateString()}</td>
+                            <td className="px-4 py-3">{b.room_number}</td>
+                            <td className="px-4 py-3">{b.academic_year}</td>
+                            <td className="px-4 py-3">{new Date(b.booked_at).toLocaleDateString()}</td>
                             <td className="px-4 py-3">
                               <Button variant="ghost" size="sm" onClick={() => handleCancelBooking(b.id)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -193,7 +204,7 @@ export default function AdminDashboard() {
                         <p className="font-semibold mb-2">Block {block}</p>
                         <div className="space-y-1">
                           {Array.from({ length: ROOMS_PER_BLOCK }, (_, i) => i + 1).map(room => {
-                            const occ = getRoomOccupancy(hall, block, room, ay.year);
+                            const occ = getRoomOccupancy(bookings, hall, block, room);
                             return (
                               <div key={room} className="flex items-center justify-between text-xs">
                                 <span>Room {room}</span>
@@ -211,7 +222,6 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* Delete Confirmation */}
         <Dialog open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)}>
           <DialogContent>
             <DialogHeader><DialogTitle>Remove Student</DialogTitle></DialogHeader>

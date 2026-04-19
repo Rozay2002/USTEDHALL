@@ -3,30 +3,38 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { registerAdmin } from "@/lib/store";
-import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
+import { ADMIN_SECRET } from "@/lib/store";
 import { toast } from "sonner";
 import { Shield, ArrowLeft } from "lucide-react";
 
 export default function AdminRegister() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [form, setForm] = useState({ fullName: "", email: "", password: "", secretCode: "" });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const admin = registerAdmin({ fullName: form.fullName, email: form.email, password: form.password }, form.secretCode);
-      login(admin, "admin");
-      toast.success("Admin registered successfully!");
-      navigate("/admin/dashboard");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
+    if (form.secretCode !== ADMIN_SECRET) {
+      toast.error("Invalid secret code");
+      return;
     }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/admin/dashboard`,
+        data: {
+          full_name: form.fullName,
+          secret_code: form.secretCode,
+        },
+      },
+    });
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Admin registered!");
+    navigate("/admin/dashboard");
   };
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));

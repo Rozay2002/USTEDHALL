@@ -1,54 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
-import { Student, HALLS, BLOCKS, ROOMS_PER_BLOCK, MAX_OCCUPANCY, getRoomOccupancy, getAcademicYear, bookRoom, getSuggestedRooms } from "@/lib/store";
+import { HALLS, BLOCKS, ROOMS_PER_BLOCK, MAX_OCCUPANCY } from "@/lib/store";
+import { useCurrentAcademicYear, useBookings, getRoomOccupancy } from "@/hooks/useBookings";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, BedDouble, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useEffect } from "react";
 
 type Step = "hall" | "block" | "room";
 
 export default function BookRoom() {
-  const { user, userType } = useAuth();
+  const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const student = user as Student;
-  const ay = getAcademicYear();
+  const ay = useCurrentAcademicYear();
+  const { bookings } = useBookings(ay?.year);
 
   const [step, setStep] = useState<Step>("hall");
   const [selectedHall, setSelectedHall] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
   const [confirmRoom, setConfirmRoom] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!user || userType !== "student") navigate("/student/login");
-  }, [user, userType, navigate]);
+    if (!loading && (!user || role !== "student")) navigate("/student/login");
+  }, [user, role, loading, navigate]);
 
-  if (!student) return null;
-
-  const handleSelectHall = (hall: string) => {
-    setSelectedHall(hall);
-    setStep("block");
-  };
-
-  const handleSelectBlock = (block: string) => {
-    setSelectedBlock(block);
-    setStep("room");
-  };
-
-  const handleBook = () => {
-    if (!confirmRoom) return;
-    try {
-      bookRoom(student.id, selectedHall, selectedBlock, confirmRoom);
+  const handleBook = async () => {
+    if (!confirmRoom || !user || !ay) return;
+    if (!ay.is_open) { toast.error("Booking is currently closed"); return; }
+    if (bookings.some(b => b.student_id === user.id)) {
+      toast.error("You already have an active booking");
       setConfirmRoom(null);
-      setShowSuccess(true);
-    } catch (err: any) {
-      toast.error(err.message);
-      setConfirmRoom(null);
+      return;
     }
+    const occ = getRoomOccupancy(bookings, selectedHall, selectedBlock, confirmRoom);
+    if (occ >= MAX_OCCUPANCY) { toast.error("This room is full"); setConfirmRoom(null); return; }
+
+    setSubmitting(true);
+    const { error } = await supabase.from("bookings").insert({
+      student_id: user.id,
+      hall_name: selectedHall,
+      block: selectedBlock,
+      room_number: confirmRoom,
+      academic_year: ay.year,
+    });
+    setSubmitting(false);
+    if (error) { toast.error(error.message); setConfirmRoom(null); return; }
+    setConfirmRoom(null);
+    setShowSuccess(true);
   };
 
   const goBack = () => {
@@ -57,9 +60,15 @@ export default function BookRoom() {
     else navigate("/student/dashboard");
   };
 
-  const roomOccupancy = (room: number) => getRoomOccupancy(selectedHall, selectedBlock, room, ay.year);
+  const suggestions = selectedHall
+    ? BLOCKS.flatMap(block =>
+        Array.from({ length: ROOMS_PER_BLOCK }, (_, i) => i + 1).map(room => ({
+          block, room, occupancy: getRoomOccupancy(bookings, selectedHall, block, room),
+        }))
+      ).filter(s => s.occupancy < MAX_OCCUPANCY).sort((a, b) => a.occupancy - b.occupancy).slice(0, 5)
+    : [];
 
-  const suggestions = selectedHall ? getSuggestedRooms(selectedHall, ay.year) : [];
+  if (loading || !ay) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-muted">
@@ -71,7 +80,6 @@ export default function BookRoom() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-3xl">
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm mb-6">
           <button onClick={goBack} className="text-primary hover:underline flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" /> Back
@@ -88,13 +96,12 @@ export default function BookRoom() {
           </>}
         </div>
 
-        {/* Step: Select Hall */}
         {step === "hall" && (
           <div className="animate-fade-in">
             <h2 className="text-xl font-bold mb-4">Select a Hall</h2>
             <div className="grid gap-4 sm:grid-cols-3">
               {HALLS.map((hall, i) => (
-                <button key={hall} onClick={() => handleSelectHall(hall)}
+                <button key={hall} onClick={() => { setSelectedHall(hall); setStep("block"); }}
                   className="bg-card border rounded-xl p-6 text-left card-hover animate-slide-up"
                   style={{ animationDelay: `${i * 0.1}s` }}>
                   <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center mb-3">
@@ -108,16 +115,16 @@ export default function BookRoom() {
           </div>
         )}
 
-        {/* Step: Select Block */}
         {step === "block" && (
           <div className="animate-fade-in">
             <h2 className="text-xl font-bold mb-4">Select a Block in {selectedHall}</h2>
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
               {BLOCKS.map((block, i) => {
-                const totalOcc = Array.from({ length: ROOMS_PER_BLOCK }, (_, j) => getRoomOccupancy(selectedHall, block, j + 1, ay.year)).reduce((a, b) => a + b, 0);
+                const totalOcc = Array.from({ length: ROOMS_PER_BLOCK }, (_, j) =>
+                  getRoomOccupancy(bookings, selectedHall, block, j + 1)).reduce((a, b) => a + b, 0);
                 const maxTotal = ROOMS_PER_BLOCK * MAX_OCCUPANCY;
                 return (
-                  <button key={block} onClick={() => handleSelectBlock(block)}
+                  <button key={block} onClick={() => { setSelectedBlock(block); setStep("room"); }}
                     className="bg-card border rounded-xl p-6 text-center card-hover animate-slide-up"
                     style={{ animationDelay: `${i * 0.1}s` }}>
                     <div className="text-3xl font-bold text-primary mb-2">{block}</div>
@@ -129,13 +136,12 @@ export default function BookRoom() {
           </div>
         )}
 
-        {/* Step: Select Room */}
         {step === "room" && (
           <div className="animate-fade-in">
             <h2 className="text-xl font-bold mb-4">{selectedHall} — Block {selectedBlock}</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: ROOMS_PER_BLOCK }, (_, i) => i + 1).map(room => {
-                const occ = roomOccupancy(room);
+                const occ = getRoomOccupancy(bookings, selectedHall, selectedBlock, room);
                 const isFull = occ >= MAX_OCCUPANCY;
                 return (
                   <button key={room} disabled={isFull}
@@ -168,23 +174,19 @@ export default function BookRoom() {
           </div>
         )}
 
-        {/* Confirm Dialog */}
         <Dialog open={confirmRoom !== null} onOpenChange={() => setConfirmRoom(null)}>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Booking</DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>Confirm Booking</DialogTitle></DialogHeader>
             <p className="text-sm text-muted-foreground">
               You are about to book <strong>Room {confirmRoom}</strong>, <strong>Block {selectedBlock}</strong> in <strong>{selectedHall}</strong> for the <strong>{ay.year}</strong> academic year.
             </p>
             <DialogFooter>
               <Button variant="outline" onClick={() => setConfirmRoom(null)}>Cancel</Button>
-              <Button onClick={handleBook}>Confirm Booking</Button>
+              <Button onClick={handleBook} disabled={submitting}>{submitting ? "Booking..." : "Confirm Booking"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Success Dialog */}
         <Dialog open={showSuccess} onOpenChange={() => { setShowSuccess(false); navigate("/student/dashboard"); }}>
           <DialogContent>
             <div className="text-center py-4">
