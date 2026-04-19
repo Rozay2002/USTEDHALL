@@ -9,6 +9,15 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, BedDouble, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import opokuWareImg from "@/assets/halls/opoku-ware.jpg";
+import autonomyImg from "@/assets/halls/autonomy.jpg";
+import atwimaImg from "@/assets/halls/atwima.jpg";
+
+const HALL_IMAGES: Record<string, string> = {
+  "Opoku Ware Hall": opokuWareImg,
+  "Autonomy Hall": autonomyImg,
+  "Atwima Hall": atwimaImg,
+};
 
 type Step = "hall" | "block" | "room";
 
@@ -102,13 +111,24 @@ export default function BookRoom() {
             <div className="grid gap-4 sm:grid-cols-3">
               {HALLS.map((hall, i) => (
                 <button key={hall} onClick={() => { setSelectedHall(hall); setStep("block"); }}
-                  className="bg-card border rounded-xl p-6 text-left card-hover animate-slide-up"
+                  className="bg-card border rounded-xl overflow-hidden text-left card-hover animate-slide-up group"
                   style={{ animationDelay: `${i * 0.1}s` }}>
-                  <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center mb-3">
-                    <BedDouble className="h-6 w-6 text-secondary-foreground" />
+                  <div className="relative h-40 overflow-hidden bg-muted">
+                    <img
+                      src={HALL_IMAGES[hall]}
+                      alt={hall}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-2 left-3 right-3 flex items-center gap-2 text-primary-foreground">
+                      <BedDouble className="h-4 w-4" />
+                      <span className="font-semibold text-sm drop-shadow">{hall}</span>
+                    </div>
                   </div>
-                  <h3 className="font-semibold">{hall}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">4 Blocks • 40 Rooms</p>
+                  <div className="p-4">
+                    <p className="text-sm text-muted-foreground">4 Blocks • 40 Rooms</p>
+                  </div>
                 </button>
               ))}
             </div>
