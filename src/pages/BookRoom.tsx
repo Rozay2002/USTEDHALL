@@ -9,6 +9,15 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, BedDouble, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import opokuWareImg from "@/assets/halls/opoku-ware.jpg";
+import autonomyImg from "@/assets/halls/autonomy.jpg";
+import atwimaImg from "@/assets/halls/atwima.jpg";
+
+const HALL_IMAGES: Record<string, string> = {
+  "Opoku Ware Hall": opokuWareImg,
+  "Autonomy Hall": autonomyImg,
+  "Atwima Hall": atwimaImg,
+};
 
 type Step = "hall" | "block" | "room";
 
