@@ -17,7 +17,7 @@ export default function AdminLogin() {
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
   useEffect(() => {
-    if (pendingRedirect && user && !authLoading) {
+    if (pendingRedirect && user && !authLoading && role !== null) {
       if (role !== "admin") {
         toast.error("This account is not an admin");
         supabase.auth.signOut();
