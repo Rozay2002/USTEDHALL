@@ -224,6 +224,10 @@ export default function AdminDashboard() {
               ))}
             </div>
           </TabsContent>
+
+          <TabsContent value="announcements">
+            <AdminAnnouncements />
+          </TabsContent>
         </Tabs>
 
         <Dialog open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)}>
