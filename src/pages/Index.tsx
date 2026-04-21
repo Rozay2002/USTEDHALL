@@ -29,18 +29,25 @@ export default function Index() {
             University Hall<br />
             <span className="text-primary">Room Booking System</span>
           </h1>
-          <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed [perspective:600px]">
             {"Book your accommodation quickly and easily. View real-time availability, select your preferred room, and get your allocation slip instantly."
               .split(" ")
-              .map((word, i) => (
-                <span
-                  key={i}
-                  className="inline-block animate-word-rise mr-[0.25em]"
-                  style={{ animationDelay: `${0.4 + i * 0.06}s` }}
-                >
-                  {word}
-                </span>
-              ))}
+              .map((word, wi, words) => {
+                const prevChars = words.slice(0, wi).reduce((s, w) => s + w.length + 1, 0);
+                return (
+                  <span key={wi} className="inline-block whitespace-nowrap mr-[0.25em]">
+                    {word.split("").map((ch, ci) => (
+                      <span
+                        key={ci}
+                        className="inline-block animate-letter-reveal"
+                        style={{ animationDelay: `${0.3 + (prevChars + ci) * 0.018}s` }}
+                      >
+                        {ch}
+                      </span>
+                    ))}
+                  </span>
+                );
+              })}
           </p>
 
           <div className="grid sm:grid-cols-2 gap-6 max-w-lg mx-auto">
