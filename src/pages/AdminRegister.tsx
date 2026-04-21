@@ -21,7 +21,7 @@ export default function AdminRegister() {
     }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email: form.email,
+      email: form.email.trim().toLowerCase(),
       password: form.password,
       options: {
         emailRedirectTo: `${window.location.origin}/admin/dashboard`,

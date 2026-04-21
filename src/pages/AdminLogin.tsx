@@ -32,7 +32,10 @@ export default function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
     if (error) { setLoading(false); toast.error(error.message); return; }
     setLoading(false);
     setPendingRedirect(true);

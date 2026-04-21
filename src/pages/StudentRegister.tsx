@@ -23,7 +23,7 @@ export default function StudentRegister() {
     }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email: form.email,
+      email: form.email.trim().toLowerCase(),
       password: form.password,
       options: {
         emailRedirectTo: `${window.location.origin}/student/dashboard`,
