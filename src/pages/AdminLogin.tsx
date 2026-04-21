@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,25 +10,32 @@ import { Shield, ArrowLeft } from "lucide-react";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { user, role, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+
+  useEffect(() => {
+    if (pendingRedirect && user && !authLoading) {
+      if (role !== "admin") {
+        toast.error("This account is not an admin");
+        supabase.auth.signOut();
+        setPendingRedirect(false);
+        return;
+      }
+      toast.success("Welcome back, Admin!");
+      navigate("/admin/dashboard");
+    }
+  }, [pendingRedirect, user, role, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setLoading(false); toast.error(error.message); return; }
-
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
     setLoading(false);
-    if (!roles?.some(r => r.role === "admin")) {
-      toast.error("This account is not an admin");
-      await supabase.auth.signOut();
-      return;
-    }
-    toast.success("Welcome back, Admin!");
-    navigate("/admin/dashboard");
+    setPendingRedirect(true);
   };
 
   return (

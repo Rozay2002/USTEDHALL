@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,26 @@ import { GraduationCap, ArrowLeft } from "lucide-react";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
+  const { user, role, loading: authLoading } = useAuth();
   const [indexNumber, setIndexNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+
+  useEffect(() => {
+    if (pendingRedirect && user && !authLoading) {
+      if (role === "admin") {
+        toast.error("Please use the admin login");
+        supabase.auth.signOut();
+        setPendingRedirect(false);
+        return;
+      }
+      if (role === "student") {
+        toast.success("Welcome back!");
+        navigate("/student/dashboard");
+      }
+    }
+  }, [pendingRedirect, user, role, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,22 +51,14 @@ export default function StudentLogin() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: emailData as string,
       password,
     });
     if (error) { setLoading(false); toast.error(error.message); return; }
 
-    // Verify role
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
     setLoading(false);
-    if (roles?.some(r => r.role === "admin")) {
-      toast.error("Please use the admin login");
-      await supabase.auth.signOut();
-      return;
-    }
-    toast.success("Welcome back!");
-    navigate("/student/dashboard");
+    setPendingRedirect(true);
   };
 
   return (
