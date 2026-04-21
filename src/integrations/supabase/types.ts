@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          target_hall: Database["public"]["Enums"]["announcement_target"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          message: string
+          target_hall?: Database["public"]["Enums"]["announcement_target"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string
+          target_hall?: Database["public"]["Enums"]["announcement_target"]
+          title?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           academic_year: string
@@ -137,6 +164,11 @@ export type Database = {
       }
     }
     Enums: {
+      announcement_target:
+        | "all"
+        | "Opoku Ware Hall"
+        | "Autonomy Hall"
+        | "Atwima Hall"
       app_role: "admin" | "student"
     }
     CompositeTypes: {
@@ -265,6 +297,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      announcement_target: [
+        "all",
+        "Opoku Ware Hall",
+        "Autonomy Hall",
+        "Atwima Hall",
+      ],
       app_role: ["admin", "student"],
     },
   },

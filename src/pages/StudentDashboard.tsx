@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useCurrentAcademicYear, useBookings } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/lib/store";
+import { StudentAnnouncements } from "@/components/announcements/StudentAnnouncements";
 
 export default function StudentDashboard() {
   const { user, profile, role, loading, signOut } = useAuth();
@@ -141,6 +142,10 @@ export default function StudentDashboard() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-6">
+          <StudentAnnouncements studentHall={myBooking?.hall_name ?? null} />
         </div>
       </main>
     </div>

@@ -7,11 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
-import { Shield, LogOut, Users, Building2, CalendarDays, BookOpen, Trash2 } from "lucide-react";
+import { Shield, LogOut, Users, Building2, CalendarDays, BookOpen, Trash2, Megaphone } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { AdminAnnouncements } from "@/components/announcements/AdminAnnouncements";
 
 export default function AdminDashboard() {
   const { user, profile, role, loading, signOut } = useAuth();
@@ -115,6 +116,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="students">Students</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
+            <TabsTrigger value="announcements">
+              <Megaphone className="h-3 w-3 mr-1" /> Announcements
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="students">
@@ -219,6 +223,10 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <AdminAnnouncements />
           </TabsContent>
         </Tabs>
 
