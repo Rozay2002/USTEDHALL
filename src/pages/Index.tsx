@@ -29,19 +29,11 @@ export default function Index() {
             University Hall<br />
             <span className="text-primary">Room Booking System</span>
           </h1>
-          <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-            {"Book your accommodation quickly and easily. View real-time availability, select your preferred room, and get your allocation slip instantly."
-              .split(" ")
-              .map((word, i) => (
-                <span
-                  key={i}
-                  className="inline-block animate-word-rise mr-[0.25em]"
-                  style={{ animationDelay: `${0.4 + i * 0.06}s` }}
-                >
-                  {word}
-                </span>
-              ))}
-          </p>
+          <div className="mb-10 max-w-xl mx-auto h-[5.5rem] sm:h-[4rem] flex items-start justify-center">
+            <p className="text-muted-foreground text-lg leading-relaxed overflow-hidden whitespace-normal sm:whitespace-nowrap border-r-2 border-primary animate-typewriter animate-blink-caret">
+              Book your accommodation quickly and easily. View real-time availability, select your preferred room, and get your allocation slip instantly.
+            </p>
+          </div>
 
           <div className="grid sm:grid-cols-2 gap-6 max-w-lg mx-auto">
             <Link to="/student/login" className="group">
