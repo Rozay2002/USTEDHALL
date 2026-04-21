@@ -17,7 +17,7 @@ export default function StudentLogin() {
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
   useEffect(() => {
-    if (pendingRedirect && user && !authLoading) {
+    if (pendingRedirect && user && !authLoading && role !== null) {
       if (role === "admin") {
         toast.error("Please use the admin login");
         supabase.auth.signOut();
