@@ -13,6 +13,7 @@ export interface Profile {
   contact: string | null;
   program: string | null;
   level: number | null;
+  avatar_url?: string | null;
 }
 
 export interface Booking {

@@ -7,6 +7,8 @@ import { useCurrentAcademicYear, useBookings } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/lib/store";
 import { StudentAnnouncements } from "@/components/announcements/StudentAnnouncements";
+import { ProfilePhotoUpload } from "@/components/profile/ProfilePhotoUpload";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function StudentDashboard() {
   const { user, profile, role, loading, signOut } = useAuth();
@@ -45,6 +47,14 @@ export default function StudentDashboard() {
             <h1 className="text-lg font-bold">UniHall</h1>
           </div>
           <div className="flex items-center gap-3">
+            {profile.avatar_url ? (
+              <Avatar className="h-8 w-8 ring-2 ring-primary-foreground/30">
+                <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                <AvatarFallback className="text-primary bg-primary-foreground text-xs">
+                  {profile.full_name.split(" ").map(s => s[0]).slice(0,2).join("")}
+                </AvatarFallback>
+              </Avatar>
+            ) : null}
             <span className="text-sm hidden sm:inline">{profile.full_name}</span>
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80" onClick={async () => { await signOut(); navigate("/"); }}>
               <LogOut className="h-4 w-4" />
@@ -64,6 +74,9 @@ export default function StudentDashboard() {
             <div className="flex items-center gap-2 mb-4">
               <User className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Personal Information</h3>
+            </div>
+            <div className="flex justify-center mb-5 pb-5 border-b">
+              <ProfilePhotoUpload />
             </div>
             <dl className="space-y-2 text-sm">
               {[
