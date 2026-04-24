@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setRole(null);
       }
+      setLoading(false);
     });
 
     // THEN check existing session
