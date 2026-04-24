@@ -23,7 +23,9 @@ export default function AdminDashboard() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && (!user || role !== "admin")) navigate("/admin/login");
+    if (loading) return;
+    if (!user) { navigate("/admin/login"); return; }
+    if (role && role !== "admin") navigate("/admin/login");
   }, [user, role, loading, navigate]);
 
   const fetchStudents = async () => {

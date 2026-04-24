@@ -17,7 +17,10 @@ export default function StudentLogin() {
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
   useEffect(() => {
-    if (pendingRedirect && user && !authLoading && role !== null) {
+    if (!pendingRedirect) return;
+    if (authLoading) return;
+    if (!user) return;
+    if (role === null) return;
       if (role === "admin") {
         toast.error("Please use the admin login");
         supabase.auth.signOut();
@@ -28,7 +31,6 @@ export default function StudentLogin() {
         toast.success("Welcome back!");
         navigate("/student/dashboard");
       }
-    }
   }, [pendingRedirect, user, role, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

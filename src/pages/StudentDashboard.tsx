@@ -16,7 +16,9 @@ export default function StudentDashboard() {
   const [roommates, setRoommates] = useState<Profile[]>([]);
 
   useEffect(() => {
-    if (!loading && (!user || role !== "student")) navigate("/student/login");
+    if (loading) return;
+    if (!user) { navigate("/student/login"); return; }
+    if (role && role !== "student") navigate("/student/login");
   }, [user, role, loading, navigate]);
 
   const myBooking = bookings.find(b => b.student_id === user?.id);
