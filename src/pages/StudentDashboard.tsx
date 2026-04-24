@@ -75,6 +75,9 @@ export default function StudentDashboard() {
               <User className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Personal Information</h3>
             </div>
+            <div className="flex justify-center mb-5 pb-5 border-b">
+              <ProfilePhotoUpload />
+            </div>
             <dl className="space-y-2 text-sm">
               {[
                 ["Full Name", profile.full_name],
