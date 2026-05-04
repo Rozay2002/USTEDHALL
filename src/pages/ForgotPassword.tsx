@@ -8,17 +8,30 @@ import { toast } from "sonner";
 import { KeyRound, ArrowLeft } from "lucide-react";
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
-      { redirectTo: `${window.location.origin}/reset-password` }
-    );
+    let email = identifier.trim().toLowerCase();
+    // If user entered an index number (no @), look up the email
+    if (!email.includes("@")) {
+      const { data, error: lookupError } = await (supabase.rpc as any)(
+        "get_email_by_index",
+        { _index_number: identifier.trim() }
+      );
+      if (lookupError || !data) {
+        setLoading(false);
+        toast.error("No account found");
+        return;
+      }
+      email = data as string;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -46,14 +59,14 @@ export default function ForgotPassword() {
           </div>
           {sent ? (
             <div className="space-y-4">
-              <p className="text-sm">If an account exists for <span className="font-medium">{email}</span>, a password reset link has been sent. The link expires shortly, so please check your inbox soon.</p>
+              <p className="text-sm">If an account exists, a password reset link has been sent to your email. The link expires shortly, so please check your inbox soon.</p>
               <Link to="/student/login" className="text-sm text-primary hover:underline">Back to login</Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label>Email</Label>
-                <Input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+                <Label>Email or Index Number</Label>
+                <Input required value={identifier} onChange={e => setIdentifier(e.target.value)} placeholder="you@example.com or 10-digit index" />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Sending..." : "Send Reset Link"}
