@@ -83,6 +83,9 @@ export default function StudentLogin() {
             <div><Label>Index Number</Label><Input required value={indexNumber} onChange={e => setIndexNumber(e.target.value)} maxLength={10} placeholder="10-digit index number" /></div>
             <div><Label>Password</Label><Input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Sign In"}</Button>
+            <div className="text-center">
+              <Link to="/forgot-password" className="text-sm text-primary hover:underline">Forgot Password?</Link>
+            </div>
             <p className="text-center text-sm text-muted-foreground">Don't have an account? <Link to="/student/register" className="text-primary font-medium hover:underline">Register</Link></p>
           </form>
         </div>
