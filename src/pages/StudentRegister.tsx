@@ -22,6 +22,16 @@ export default function StudentRegister() {
       return;
     }
     setLoading(true);
+    // Pre-check: index number must be unique
+    const { data: existingEmail } = await (supabase.rpc as any)(
+      "get_email_by_index",
+      { _index_number: form.indexNumber }
+    );
+    if (existingEmail) {
+      setLoading(false);
+      toast.error("This index number is already registered");
+      return;
+    }
     const { error } = await supabase.auth.signUp({
       email: form.email.trim().toLowerCase(),
       password: form.password,
@@ -38,7 +48,10 @@ export default function StudentRegister() {
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      const msg = error.message?.toLowerCase().includes("database")
+        ? "This index number or email is already registered"
+        : error.message;
+      toast.error(msg);
       return;
     }
     toast.success("Registration successful!");
