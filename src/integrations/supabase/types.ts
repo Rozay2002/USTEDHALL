@@ -95,6 +95,48 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          block: string | null
+          category: string | null
+          created_at: string
+          description: string
+          hall_name: string | null
+          id: string
+          room_number: number | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          student_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          block?: string | null
+          category?: string | null
+          created_at?: string
+          description: string
+          hall_name?: string | null
+          id?: string
+          room_number?: number | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          student_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          block?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string
+          hall_name?: string | null
+          id?: string
+          room_number?: number | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          student_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -173,6 +215,7 @@ export type Database = {
         | "Autonomy Hall"
         | "Atwima Hall"
       app_role: "admin" | "student"
+      complaint_status: "pending" | "in_progress" | "resolved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -307,6 +350,7 @@ export const Constants = {
         "Atwima Hall",
       ],
       app_role: ["admin", "student"],
+      complaint_status: ["pending", "in_progress", "resolved"],
     },
   },
 } as const
