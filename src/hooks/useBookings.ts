@@ -17,7 +17,7 @@ export function useCurrentAcademicYear() {
     fetchAy();
 
     const channel = supabase
-      .channel("academic_years_changes")
+      .channel(`academic_years_changes_${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "academic_years" }, () => fetchAy())
       .subscribe();
 
@@ -44,7 +44,7 @@ export function useBookings(academicYear?: string) {
     fetchBookings();
 
     const channel = supabase
-      .channel("bookings_changes")
+      .channel(`bookings_changes_${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => fetchBookings())
       .subscribe();
 
