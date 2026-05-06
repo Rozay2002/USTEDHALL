@@ -7,12 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
-import { Shield, LogOut, Users, Building2, CalendarDays, BookOpen, Trash2, Megaphone } from "lucide-react";
+import { Shield, LogOut, Users, Building2, CalendarDays, BookOpen, Trash2, Megaphone, MessageSquareWarning } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AdminAnnouncements } from "@/components/announcements/AdminAnnouncements";
+import { AdminComplaints } from "@/components/complaints/AdminComplaints";
 
 export default function AdminDashboard() {
   const { user, profile, role, loading, signOut } = useAuth();
@@ -120,6 +121,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
             <TabsTrigger value="announcements">
               <Megaphone className="h-3 w-3 mr-1" /> Announcements
+            </TabsTrigger>
+            <TabsTrigger value="complaints">
+              <MessageSquareWarning className="h-3 w-3 mr-1" /> Complaints
             </TabsTrigger>
           </TabsList>
 
@@ -229,6 +233,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="announcements">
             <AdminAnnouncements />
+          </TabsContent>
+
+          <TabsContent value="complaints">
+            <AdminComplaints />
           </TabsContent>
         </Tabs>
 
