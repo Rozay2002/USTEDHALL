@@ -10,7 +10,7 @@ export default function Index() {
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BedDouble className="h-7 w-7" />
-            <span className="text-xl font-bold font-heading">UniHall</span>
+            <span className="text-xl font-bold font-heading">UstedHalls</span>
           </div>
           <nav className="flex items-center gap-2">
             <Link to="/student/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">Student</Button></Link>
@@ -81,7 +81,7 @@ export default function Index() {
       </main>
 
       <footer className="border-t py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} UniHall — University Hall Room Booking System
+        © {new Date().getFullYear()} UstedHalls — University Hall Room Booking System
       </footer>
     </div>
   );

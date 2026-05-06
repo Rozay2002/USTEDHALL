@@ -44,7 +44,7 @@ export default function StudentDashboard() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BedDouble className="h-6 w-6" />
-            <h1 className="text-lg font-bold">UniHall</h1>
+            <h1 className="text-lg font-bold">UstedHalls</h1>
           </div>
           <div className="flex items-center gap-3">
             {profile.avatar_url ? (
