@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ProgramSelect } from "@/components/ProgramSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GraduationCap, ArrowLeft } from "lucide-react";
@@ -19,6 +20,10 @@ export default function StudentRegister() {
     e.preventDefault();
     if (!/^\d{10}$/.test(form.indexNumber)) {
       toast.error("Index number must be exactly 10 digits");
+      return;
+    }
+    if (!form.program) {
+      toast.error("Please select your program from the list");
       return;
     }
     setLoading(true);
@@ -80,7 +85,10 @@ export default function StudentRegister() {
             <div><Label>Full Name</Label><Input required value={form.fullName} onChange={e => update("fullName", e.target.value)} /></div>
             <div><Label>Index Number (10 digits)</Label><Input required value={form.indexNumber} onChange={e => update("indexNumber", e.target.value)} maxLength={10} placeholder="e.g. 1234567890" /></div>
             <div><Label>Contact</Label><Input required value={form.contact} onChange={e => update("contact", e.target.value)} /></div>
-            <div><Label>Program</Label><Input required value={form.program} onChange={e => update("program", e.target.value)} placeholder="e.g. Computer Science" /></div>
+            <div>
+              <Label>Program</Label>
+              <ProgramSelect value={form.program} onChange={v => update("program", v)} />
+            </div>
             <div>
               <Label>Level</Label>
               <Select value={form.level} onValueChange={v => update("level", v)}>
