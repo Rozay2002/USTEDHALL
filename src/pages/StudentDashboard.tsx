@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/lib/store";
 import { StudentAnnouncements } from "@/components/announcements/StudentAnnouncements";
 import { ProfilePhotoUpload } from "@/components/profile/ProfilePhotoUpload";
+import { StudentComplaints } from "@/components/complaints/StudentComplaints";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function StudentDashboard() {
@@ -161,6 +162,10 @@ export default function StudentDashboard() {
 
         <div className="mt-6">
           <StudentAnnouncements studentHall={myBooking?.hall_name ?? null} />
+        </div>
+
+        <div className="mt-6">
+          <StudentComplaints />
         </div>
       </main>
     </div>
