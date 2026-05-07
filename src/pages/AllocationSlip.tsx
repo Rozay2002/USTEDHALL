@@ -2,10 +2,13 @@ import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCurrentAcademicYear, useBookings } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/lib/store";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 export default function AllocationSlip() {
   const { user, profile, role, loading } = useAuth();
@@ -13,6 +16,8 @@ export default function AllocationSlip() {
   const ay = useCurrentAcademicYear();
   const { bookings } = useBookings(ay?.year);
   const [roommates, setRoommates] = useState<Profile[]>([]);
+  const slipRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const booking = bookings.find(b => b.student_id === user?.id);
 
@@ -34,6 +39,28 @@ export default function AllocationSlip() {
   if (loading || !profile || !ay) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!booking) { navigate("/student/dashboard"); return null; }
 
+  const handleDownload = async () => {
+    if (!slipRef.current) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(slipRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+      pdf.addImage(imgData, "PNG", (pageWidth - w) / 2, 20, w, h);
+      pdf.save(`allocation-slip-${profile.index_number ?? "student"}.pdf`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to download slip");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted p-4">
       <div className="max-w-2xl mx-auto">
@@ -42,12 +69,12 @@ export default function AllocationSlip() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
           <div className="flex-1" />
-          <Button onClick={() => window.print()}>
-            <Download className="h-4 w-4 mr-2" /> Print / Download
+          <Button onClick={handleDownload} disabled={downloading}>
+            <Download className="h-4 w-4 mr-2" /> {downloading ? "Generating..." : "Download PDF"}
           </Button>
         </div>
 
-        <div className="bg-card border rounded-xl p-8 shadow-lg">
+        <div ref={slipRef} className="bg-card border rounded-xl p-8 shadow-lg">
           <div className="text-center border-b pb-6 mb-6">
             <h1 className="text-2xl font-bold text-primary">University Hall Accommodation</h1>
             <h2 className="text-lg text-muted-foreground mt-1">Room Allocation Slip</h2>
