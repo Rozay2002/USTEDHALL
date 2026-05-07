@@ -2,12 +2,11 @@ import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useCurrentAcademicYear, useBookings } from "@/hooks/useBookings";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/lib/store";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 export default function AllocationSlip() {
@@ -16,7 +15,6 @@ export default function AllocationSlip() {
   const ay = useCurrentAcademicYear();
   const { bookings } = useBookings(ay?.year);
   const [roommates, setRoommates] = useState<Profile[]>([]);
-  const slipRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
   const booking = bookings.find(b => b.student_id === user?.id);
@@ -40,19 +38,91 @@ export default function AllocationSlip() {
   if (!booking) { navigate("/student/dashboard"); return null; }
 
   const handleDownload = async () => {
-    if (!slipRef.current) return;
     setDownloading(true);
     try {
-      const canvas = await html2canvas(slipRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ unit: "pt", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
-      const w = canvas.width * ratio;
-      const h = canvas.height * ratio;
-      pdf.addImage(imgData, "PNG", (pageWidth - w) / 2, 20, w, h);
+      const margin = 48;
+      let y = 60;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text("UstedHalls Accommodation", pageWidth / 2, y, { align: "center" });
+      y += 22;
+      pdf.setFontSize(13);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Room Allocation Slip", pageWidth / 2, y, { align: "center" });
+      y += 18;
+      pdf.setFontSize(10);
+      pdf.text(`Academic Year: ${ay.year}`, pageWidth / 2, y, { align: "center" });
+      y += 20;
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 24;
+
+      const drawRow = (label: string, value: string) => {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(120);
+        pdf.text(label, margin, y);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(20);
+        pdf.setFontSize(11);
+        pdf.text(String(value ?? "—"), margin + 130, y);
+        y += 18;
+      };
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.setTextColor(20);
+      pdf.text("Student Information", margin, y);
+      y += 16;
+      drawRow("Full Name", profile.full_name);
+      drawRow("Index Number", profile.index_number ?? "—");
+      drawRow("Program", profile.program ?? "—");
+      drawRow("Level", profile.level ? `Level ${profile.level}` : "—");
+      drawRow("Contact", profile.contact ?? "—");
+      drawRow("Email", profile.email);
+
+      y += 10;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("Room Details", margin, y);
+      y += 16;
+      drawRow("Hall", booking.hall_name);
+      drawRow("Block", `Block ${booking.block}`);
+      drawRow("Room", `Room ${booking.room_number}`);
+      drawRow("Booked On", new Date(booking.booked_at).toLocaleDateString());
+
+      if (roommates.length > 0) {
+        y += 10;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.text("Roommates", margin, y);
+        y += 16;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(20);
+        roommates.forEach(r => {
+          pdf.text(`• ${r.full_name} (${r.index_number ?? "—"})`, margin, y);
+          y += 14;
+        });
+      }
+
+      y += 20;
+      pdf.setLineWidth(0.5);
+      pdf.setDrawColor(200);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 16;
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(9);
+      pdf.setTextColor(120);
+      pdf.text("This allocation slip is computer-generated and serves as proof of accommodation booking.", pageWidth / 2, y, { align: "center" });
+      y += 12;
+      pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth / 2, y, { align: "center" });
+
       pdf.save(`allocation-slip-${profile.index_number ?? "student"}.pdf`);
+      toast.success("Allocation slip downloaded");
     } catch (e) {
       console.error(e);
       toast.error("Failed to download slip");
@@ -74,7 +144,7 @@ export default function AllocationSlip() {
           </Button>
         </div>
 
-        <div ref={slipRef} className="bg-card border rounded-xl p-8 shadow-lg">
+        <div className="bg-card border rounded-xl p-8 shadow-lg">
           <div className="text-center border-b pb-6 mb-6">
             <h1 className="text-2xl font-bold text-primary">University Hall Accommodation</h1>
             <h2 className="text-lg text-muted-foreground mt-1">Room Allocation Slip</h2>
