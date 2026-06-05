@@ -13,15 +13,23 @@ export default function AllocationSlip() {
   const { user, profile, role, loading } = useAuth();
   const navigate = useNavigate();
   const ay = useCurrentAcademicYear();
-  const { bookings } = useBookings(ay?.year);
+  const { bookings, loading: bookingsLoading } = useBookings(ay?.year);
   const [roommates, setRoommates] = useState<Profile[]>([]);
   const [downloading, setDownloading] = useState(false);
 
   const booking = bookings.find(b => b.student_id === user?.id);
 
   useEffect(() => {
-    if (!loading && (!user || role !== "student")) navigate("/student/login");
+    if (loading) return;
+    if (!user) { navigate("/student/login", { replace: true }); return; }
+    if (role && role !== "student") navigate("/student/login", { replace: true });
   }, [user, role, loading, navigate]);
+
+  useEffect(() => {
+    if (!loading && ay && !bookingsLoading && !booking) {
+      navigate("/student/dashboard", { replace: true });
+    }
+  }, [loading, ay, bookingsLoading, booking, navigate]);
 
   useEffect(() => {
     if (!booking) return;
@@ -34,8 +42,8 @@ export default function AllocationSlip() {
       .then(({ data }) => setRoommates((data as Profile[]) || []));
   }, [booking, bookings, user?.id]);
 
-  if (loading || !profile || !ay) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!booking) { navigate("/student/dashboard"); return null; }
+  if (loading || !profile || !ay || bookingsLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!booking) return null;
 
   const handleDownload = async () => {
     setDownloading(true);
