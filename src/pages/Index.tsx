@@ -10,11 +10,11 @@ export default function Index() {
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BedDouble className="h-7 w-7" />
-            <span className="text-xl font-bold font-heading">UstedHalls</span>
+            <span className="text-xl font-bold font-heading">USTED HALLS</span>
           </div>
           <nav className="flex items-center gap-2">
-            <Link to="/student/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">Student</Button></Link>
-            <Link to="/admin/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">Admin</Button></Link>
+            <Link to="/student/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">STUDENT</Button></Link>
+            <Link to="/admin/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">ADMIN</Button></Link>
           </nav>
         </div>
       </header>
@@ -23,14 +23,14 @@ export default function Index() {
         <div className="max-w-3xl w-full text-center py-16 animate-fade-in">
           <div className="inline-flex items-center gap-2 bg-secondary/20 text-secondary-foreground px-4 py-1.5 rounded-full text-sm font-medium mb-6">
             <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            Booking Open — 2025/2026
+            Booking Open  2025/2026
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
-            University Hall<br />
+            USTED Hall<br />
             <span className="text-primary">Room Booking System</span>
           </h1>
           <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed [perspective:600px]">
-            {"Book your accommodation quickly and easily. View real-time availability, select your preferred room, and get your allocation slip instantly."
+            {"Book your accommodation quickly and easily. View real time availability, select your preferred room, and get your allocation slip instantly."
               .split(" ")
               .map((word, wi, words) => {
                 const prevChars = words.slice(0, wi).reduce((s, w) => s + w.length + 1, 0);
@@ -70,7 +70,7 @@ export default function Index() {
                   <Shield className="h-7 w-7 text-secondary-foreground" />
                 </div>
                 <h2 className="text-lg font-semibold mb-1">Admin Portal</h2>
-                <p className="text-sm text-muted-foreground mb-4">Manage halls, rooms & bookings</p>
+                <p className="text-sm text-muted-foreground mb-4">Manage halls, rooms and bookings</p>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                   Admin login <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </span>
@@ -81,7 +81,7 @@ export default function Index() {
       </main>
 
       <footer className="border-t py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} UstedHalls — University Hall Room Booking System
+        © {new Date().getFullYear()} USTED Halls Room Booking System
       </footer>
     </div>
   );
