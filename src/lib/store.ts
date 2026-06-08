@@ -3,7 +3,7 @@ export const HALLS = ["Opoku Ware Hall", "Autonomy Hall", "Atwima Hall"];
 export const BLOCKS = ["A", "B", "C", "D"];
 export const ROOMS_PER_BLOCK = 10;
 export const MAX_OCCUPANCY = 3;
-export const ADMIN_SECRET = "ADMIN2025";
+export const ADMIN_SECRET = "RAS2026";
 
 export interface Profile {
   id: string;
