@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
+    
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -89,4 +90,5 @@
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
   }
+  
 }

@@ -21,10 +21,8 @@ export default function Index() {
 
       <main className="flex-1 flex items-center justify-center bg-muted px-4">
         <div className="max-w-3xl w-full text-center py-16 animate-fade-in">
-          <div className="inline-flex items-center gap-2 bg-secondary/20 text-secondary-foreground px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-            <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            Booking Open  2025/2026
-          </div>
+          
+          
           <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
             USTED Hall<br />
             <span className="text-primary">Room Booking System</span>
