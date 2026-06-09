@@ -8,7 +8,10 @@ export default function Index() {
       {/* Hero */}
       <header className="bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          
+          <div className="flex items-center gap-3">
+            
+            <span className="text-xl font-bold font-heading">USTED HALLS</span>
+          </div>
           <nav className="flex items-center gap-2">
             <Link to="/student/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">STUDENT</Button></Link>
             <Link to="/admin/login"><Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary/80">ADMIN</Button></Link>
